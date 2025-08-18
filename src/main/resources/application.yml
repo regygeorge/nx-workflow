@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/miniflow
+    username: postgres
+    password: root123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      dialect: org.hibernate.dialect.PostgreSQLDialect
+
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate.format_sql: true
+      hibernate.type.preferred_json_mapper: jackson
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+server:
+  port: 8084
+logging:
+  level:
+    org.springframework.web: INFO
