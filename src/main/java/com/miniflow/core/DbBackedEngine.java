@@ -124,6 +124,18 @@ public class DbBackedEngine {
         return snapshot(iid);
     }
 
+    /**
+     * Sets the due date for a task
+     * @param taskId The ID of the task
+     * @param dueDateTime The due date and time
+     */
+    @Transactional
+    public void setTaskDueDate(UUID taskId, OffsetDateTime dueDateTime) {
+        WfTask task = taskRepo.findById(taskId).orElseThrow();
+        task.dueDateTime = dueDateTime;
+        taskRepo.save(task);
+    }
+
     @Transactional
     public InstanceView completeUserTask(UUID taskId, Map<String, Object> updates) {
         WfTask t = taskRepo.findById(taskId).orElseThrow();

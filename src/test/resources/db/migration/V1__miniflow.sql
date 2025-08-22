@@ -41,7 +41,8 @@ CREATE TABLE wf_task (
   name         varchar(255) NOT NULL,
   state        varchar(20) NOT NULL CHECK (state IN ('OPEN','COMPLETED','CANCELLED')),
   created_at   timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP(),
-  completed_at timestamp
+  completed_at timestamp,
+  due_date_time timestamp
 );
 CREATE INDEX wf_task_instance_state_idx ON wf_task(instance_id, state);
 
