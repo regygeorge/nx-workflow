@@ -79,13 +79,13 @@
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_lab_route" name="lab_route" sourceRef="Gateway_lab_check" targetRef="id_lab">
       <bpmn:extensionElements />
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=lab_required==true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{lab_required == true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="Event_01583nz">
       <bpmn:incoming>Flow_1uu71ik</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1uu71ik" name="false_route" sourceRef="Gateway_lab_check" targetRef="Event_01583nz">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=lab_required==false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{lab_required == false}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
