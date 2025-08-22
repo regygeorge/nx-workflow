@@ -17,8 +17,14 @@ import java.util.*;
 public class SimpleBpmnParser {
   public static ProcessDefinition parse(InputStream in){
     try {
-      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance(); dbf.setNamespaceAware(true);
-      Document doc = dbf.newDocumentBuilder().parse(in); Element root = doc.getDocumentElement();
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      dbf.setNamespaceAware(true);
+      // Fix security vulnerability - disable DOCTYPE declarations
+      dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+      dbf.setFeature("http://xml.org/sax/features/external-general-entities", false);
+      dbf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+      Document doc = dbf.newDocumentBuilder().parse(in);
+      Element root = doc.getDocumentElement();
       Element process = first(root, "process"); if (process==null) throw new IllegalArgumentException("No <process>");
 
       String pid = process.getAttribute("id"); String pname = process.getAttribute("name");
@@ -57,14 +63,17 @@ public class SimpleBpmnParser {
     } catch (Exception ex){ throw new RuntimeException("Parse BPMN failed: "+ex.getMessage(), ex); }
   }
 
-  // Simple ${x=="A"} or ${x!="A"} or numeric equality
+  // Handle both ${x=="A"} and #{x=="A"} expressions, or complex SpEL expressions
   private static EngineModel.Condition parseSimpleExpr(String raw){
-    if (raw==null) return null; String s=raw.trim(); if (s.startsWith("${") && s.endsWith("}")) s=s.substring(2,s.length()-1);
-    boolean neq = s.contains("!="); String op = neq?"!=":"=="; String[] p = s.split(op,2); if (p.length!=2) return null;
-    String key=p[0].trim(); String val=p[1].trim(); Object expected;
-    if ((val.startsWith("\"")&&val.endsWith("\""))||(val.startsWith("'")&&val.endsWith("'"))) expected = val.substring(1,val.length()-1);
-    else { try{ expected = Long.parseLong(val);}catch(Exception e){ expected = val; } }
-    Object exp = expected; return vars -> { boolean eq = java.util.Objects.equals(vars.get(key), exp); return neq? !eq : eq; };
+    if (raw==null) return null;
+    String s=raw.trim();
+    
+    // For complex expressions, use SpEL directly
+    final String expr = s;
+    return vars -> {
+      Object result = com.miniflow.core.Expr.eval(expr, vars);
+      return result instanceof Boolean ? (Boolean) result : false;
+    };
   }
 
   // Read extensionElements and attributes as key-value props (miniflow.*)

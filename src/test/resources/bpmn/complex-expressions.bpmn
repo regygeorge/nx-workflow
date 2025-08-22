@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_1"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="complex-expressions" name="Complex Expressions Process" isExecutable="true">
+    <bpmn:startEvent id="start" name="Start">
+      <bpmn:outgoing>flow1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="gateway1" name="First Decision">
+      <bpmn:incoming>flow1</bpmn:incoming>
+      <bpmn:outgoing>flow2</bpmn:outgoing>
+      <bpmn:outgoing>flow3</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="gateway1" />
+    <bpmn:sequenceFlow id="flow2" sourceRef="gateway1" targetRef="taskA">
+      <bpmn:conditionExpression><![CDATA[#{status == 'APPROVED' && amount > 1000}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow3" sourceRef="gateway1" targetRef="taskB">
+      <bpmn:conditionExpression><![CDATA[#{status != 'APPROVED' || amount <= 1000}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="taskA" name="High Value Task">
+      <bpmn:incoming>flow2</bpmn:incoming>
+      <bpmn:outgoing>flow4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="taskB" name="Standard Task">
+      <bpmn:incoming>flow3</bpmn:incoming>
+      <bpmn:outgoing>flow5</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gateway2" name="Second Decision">
+      <bpmn:incoming>flow4</bpmn:incoming>
+      <bpmn:incoming>flow5</bpmn:incoming>
+      <bpmn:outgoing>flow6</bpmn:outgoing>
+      <bpmn:outgoing>flow7</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="flow4" sourceRef="taskA" targetRef="gateway2" />
+    <bpmn:sequenceFlow id="flow5" sourceRef="taskB" targetRef="gateway2" />
+    <bpmn:sequenceFlow id="flow6" sourceRef="gateway2" targetRef="taskC">
+      <bpmn:conditionExpression><![CDATA[#{user == 'admin' || (status == 'APPROVED' && priority > 5)}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow7" sourceRef="gateway2" targetRef="taskD">
+      <bpmn:conditionExpression><![CDATA[#{user != 'admin' && (status != 'APPROVED' || priority <= 5)}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="taskC" name="Priority Task">
+      <bpmn:incoming>flow6</bpmn:incoming>
+      <bpmn:outgoing>flow8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="taskD" name="Regular Task">
+      <bpmn:incoming>flow7</bpmn:incoming>
+      <bpmn:outgoing>flow9</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="end" name="End">
+      <bpmn:incoming>flow8</bpmn:incoming>
+      <bpmn:incoming>flow9</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow8" sourceRef="taskC" targetRef="end" />
+    <bpmn:sequenceFlow id="flow9" sourceRef="taskD" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>
+
+<!-- Made with Bob -->
