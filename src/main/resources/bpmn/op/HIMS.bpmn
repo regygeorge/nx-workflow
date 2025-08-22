@@ -50,7 +50,9 @@
       <bpmn:incoming>Flow_lab_route</bpmn:incoming>
       <bpmn:outgoing>Flow_168rx23</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:sequenceFlow id="Flow_07o09u4" sourceRef="id_doctor" targetRef="id_pharmacy" />
+    <bpmn:sequenceFlow id="Flow_07o09u4" sourceRef="id_doctor" targetRef="id_pharmacy">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{pharmacy == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
     <bpmn:userTask id="id_pharmacy" name="Pharmacy">
       <bpmn:extensionElements>
         <zeebe:userTask />
@@ -84,9 +86,7 @@
     <bpmn:endEvent id="Event_01583nz">
       <bpmn:incoming>Flow_1uu71ik</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1uu71ik" name="false_route" sourceRef="Gateway_lab_check" targetRef="Event_01583nz">
-      <!-- Removed condition to make this the default path -->
-    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1uu71ik" name="false_route" sourceRef="Gateway_lab_check" targetRef="Event_01583nz" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="hims">
