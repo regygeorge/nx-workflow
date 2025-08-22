@@ -36,43 +36,55 @@ public class HimsExpressionTest {
         
         // Find the flow to lab task
         EngineModel.SequenceFlow labFlow = null;
+        EngineModel.SequenceFlow defaultFlow = null;
         for (EngineModel.SequenceFlow flow : gateway.outgoing) {
             if (flow.to.equals("id_lab")) {
                 labFlow = flow;
-                break;
+            } else {
+                defaultFlow = flow;
             }
         }
         assertNotNull(labFlow, "Flow to lab task not found");
+        assertNotNull(defaultFlow, "Default flow not found");
         
         // Test the condition with lab_required = true
-        assertTrue(labFlow.condition.eval(labRequiredTrue), 
+        assertTrue(labFlow.condition.eval(labRequiredTrue),
                 "Lab flow condition should evaluate to true when lab_required is true");
         
         // Test with lab_required = false
         Map<String, Object> labRequiredFalse = new HashMap<>();
         labRequiredFalse.put("lab_required", false);
         
-        // Find the flow to end event
-        EngineModel.SequenceFlow endFlow = null;
-        for (EngineModel.SequenceFlow flow : gateway.outgoing) {
-            if (!flow.to.equals("id_lab")) {
-                endFlow = flow;
-                break;
-            }
-        }
-        assertNotNull(endFlow, "Flow to end event not found");
-        
-        // Test the condition with lab_required = false
-        assertTrue(endFlow.condition.eval(labRequiredFalse), 
-                "End flow condition should evaluate to true when lab_required is false");
-        
-        // Cross-check: lab flow should be false when lab_required is false
-        assertFalse(labFlow.condition.eval(labRequiredFalse), 
+        // Test the lab flow with lab_required = false
+        assertFalse(labFlow.condition.eval(labRequiredFalse),
                 "Lab flow condition should evaluate to false when lab_required is false");
         
-        // Cross-check: end flow should be false when lab_required is true
-        assertFalse(endFlow.condition.eval(labRequiredTrue), 
-                "End flow condition should evaluate to false when lab_required is true");
+        // Test the default flow - should always be true
+        assertTrue(defaultFlow.condition.eval(labRequiredFalse),
+                "Default flow condition should always evaluate to true");
+        
+        // Test with lab_required not set
+        Map<String, Object> noLabRequired = new HashMap<>();
+        
+        // Lab flow should be false when lab_required is not set
+        assertFalse(labFlow.condition.eval(noLabRequired),
+                "Lab flow condition should evaluate to false when lab_required is not set");
+        
+        // Default flow should be true when lab_required is not set
+        assertTrue(defaultFlow.condition.eval(noLabRequired),
+                "Default flow condition should evaluate to true when lab_required is not set");
+        
+        // Test with lab_required set to a non-boolean value
+        Map<String, Object> nonBooleanLabRequired = new HashMap<>();
+        nonBooleanLabRequired.put("lab_required", "some string");
+        
+        // Lab flow should be false when lab_required is not a boolean
+        assertFalse(labFlow.condition.eval(nonBooleanLabRequired),
+                "Lab flow condition should evaluate to false when lab_required is not a boolean");
+        
+        // Default flow should be true when lab_required is not a boolean
+        assertTrue(defaultFlow.condition.eval(nonBooleanLabRequired),
+                "Default flow condition should evaluate to true when lab_required is not a boolean");
     }
 }
 

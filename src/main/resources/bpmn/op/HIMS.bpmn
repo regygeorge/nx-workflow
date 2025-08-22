@@ -85,7 +85,7 @@
       <bpmn:incoming>Flow_1uu71ik</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1uu71ik" name="false_route" sourceRef="Gateway_lab_check" targetRef="Event_01583nz">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{lab_required == false}</bpmn:conditionExpression>
+      <!-- Removed condition to make this the default path -->
     </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
