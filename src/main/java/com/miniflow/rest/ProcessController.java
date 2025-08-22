@@ -81,7 +81,13 @@ public class ProcessController {
     public List<ApiDtos.TaskView> tasks(@PathVariable("instanceId") String instanceId) {
         UUID iid = UUID.fromString(instanceId);
         List<WfTask> open = taskRepo.findByInstanceIdAndState(iid, "OPEN");
-        return open.stream().map(t -> new ApiDtos.TaskView(t.id.toString(), t.instanceId.toString(), t.nodeId, t.name)).collect(Collectors.toList());
+        return open.stream().map(t -> new ApiDtos.TaskView(
+            t.id.toString(),
+            t.instanceId.toString(),
+            t.nodeId,
+            t.name,
+            t.dueDateTime != null ? t.dueDateTime.toString() : null
+        )).collect(Collectors.toList());
     }
 
     @PostMapping("/tasks/{taskId}/complete")

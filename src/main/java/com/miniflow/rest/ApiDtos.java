@@ -19,7 +19,7 @@ public class ApiDtos {
 
     }
 
-    public record TaskView(String id, String instanceId, String nodeId, String name) {
+    public record TaskView(String id, String instanceId, String nodeId, String name, String dueDateTime) {
 
     }
 }
