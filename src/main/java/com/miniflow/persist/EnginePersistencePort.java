@@ -29,6 +29,8 @@ public interface EnginePersistencePort {
     void resetJoin(UUID instanceId, String nodeId);
 
     UUID createUserTask(UUID instanceId, UUID tokenId, String nodeId, String name);
+    
+    UUID createUserTaskWithDueDate(UUID instanceId, UUID tokenId, String nodeId, String name, java.time.OffsetDateTime dueDateTime);
 
     void completeUserTask(UUID taskId);
 

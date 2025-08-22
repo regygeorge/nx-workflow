@@ -5,6 +5,7 @@ package com.miniflow.rest;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,5 +95,21 @@ public class ProcessController {
     public ApiDtos.InstanceView complete(@PathVariable("taskId") String taskId, @RequestBody(required = false) Map<String, Object> updates) {
         DbBackedEngine.InstanceView v = engine.completeUserTask(UUID.fromString(taskId), updates == null ? Map.of() : updates);
         return new ApiDtos.InstanceView(v.id.toString(), v.processId, v.tokenAt(), v.completed, v.variables);
+    }
+    
+    /**
+     * Set the due date for a task
+     * @param taskId The ID of the task
+     * @param dueDateRequest The request containing the due date
+     */
+    @PostMapping("/tasks/{taskId}/due-date")
+    public void setTaskDueDate(@PathVariable("taskId") String taskId, @RequestBody Map<String, String> dueDateRequest) {
+        if (!dueDateRequest.containsKey("dueDateTime")) {
+            throw new IllegalArgumentException("dueDateTime is required");
+        }
+        
+        String dueDateTimeStr = dueDateRequest.get("dueDateTime");
+        OffsetDateTime dueDateTime = OffsetDateTime.parse(dueDateTimeStr);
+        engine.setTaskDueDate(UUID.fromString(taskId), dueDateTime);
     }
 }
