@@ -151,6 +151,22 @@ public class JpaEnginePersistence implements EnginePersistencePort {
         taskRepo.save(t);
         return id;
     }
+    
+    @Override
+    public UUID createUserTaskWithDueDate(UUID instanceId, UUID tokenId, String nodeId, String name, OffsetDateTime dueDateTime) {
+        UUID id = UUID.randomUUID();
+        WfTask t = new WfTask();
+        t.id = id;
+        t.instanceId = instanceId;
+        t.tokenId = tokenId;
+        t.nodeId = nodeId;
+        t.name = name;
+        t.state = "OPEN";
+        t.createdAt = now();
+        t.dueDateTime = dueDateTime;
+        taskRepo.save(t);
+        return id;
+    }
 
     @Override
     public void completeUserTask(UUID taskId) {

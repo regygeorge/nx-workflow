@@ -14,4 +14,5 @@ public UUID id; public UUID instanceId;
 public UUID tokenId; public String nodeId;
 public String name; public String state;
 public OffsetDateTime createdAt;
-public OffsetDateTime completedAt; }
+public OffsetDateTime completedAt;
+public OffsetDateTime dueDateTime; }

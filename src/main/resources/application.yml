@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/miniflow
     username: postgres
-    password: root123
+    password: postgres
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
