@@ -1,0 +1,15 @@
+{
+  "namespace": "com.miniflow.events",
+  "type": "record",
+  "name": "WorkflowInstanceEvent",
+  "fields": [
+    {"name": "eventId", "type": "string"},
+    {"name": "eventType", "type": "string"},
+    {"name": "timestamp", "type": "long"},
+    {"name": "instanceId", "type": "string"},
+    {"name": "processId", "type": "string"},
+    {"name": "businessKey", "type": ["null", "string"], "default": null},
+    {"name": "status", "type": "string"},
+    {"name": "variables", "type": ["null", {"type": "map", "values": ["null", "string", "int", "long", "float", "double", "boolean"]}], "default": null}
+  ]
+}
