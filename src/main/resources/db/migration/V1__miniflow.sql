@@ -8,6 +8,7 @@ CREATE TABLE wf_process (
 CREATE TABLE wf_instance (
   id           uuid PRIMARY KEY,
   process_id   text NOT NULL REFERENCES wf_process(process_id) ON DELETE RESTRICT,
+  business_key text,
   status       text NOT NULL CHECK (status IN ('RUNNING','COMPLETED')),
   variables    jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at   timestamptz NOT NULL DEFAULT now(),

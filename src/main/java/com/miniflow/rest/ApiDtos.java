@@ -11,11 +11,11 @@ public class ApiDtos {
 
     }
 
-    public record StartResponse(String instanceId, String processId, String tokenAt, boolean completed, Map<String, Object> variables) {
+    public record StartResponse(String instanceId, String processId, String businessKey, String tokenAt, boolean completed, Map<String, Object> variables) {
 
     }
 
-    public record InstanceView(String instanceId, String processId, String tokenAt, boolean completed, Map<String, Object> variables) {
+    public record InstanceView(String instanceId, String processId, String businessKey, String tokenAt, boolean completed, Map<String, Object> variables) {
 
     }
 

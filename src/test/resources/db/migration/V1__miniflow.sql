@@ -8,6 +8,7 @@ CREATE TABLE wf_process (
 CREATE TABLE wf_instance (
   id           uuid PRIMARY KEY,
   process_id   varchar(255) NOT NULL REFERENCES wf_process(process_id) ON DELETE RESTRICT,
+  business_key varchar(255),
   status       varchar(20) NOT NULL CHECK (status IN ('RUNNING','COMPLETED')),
   variables    varchar(4000) NOT NULL DEFAULT '{}',
   created_at   timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP(),

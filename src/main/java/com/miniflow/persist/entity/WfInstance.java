@@ -13,6 +13,7 @@ public class WfInstance {
     @Id public UUID id;
 
     public String processId;
+    public String businessKey;
     public String status;
 
     // <— map JSONB properly
