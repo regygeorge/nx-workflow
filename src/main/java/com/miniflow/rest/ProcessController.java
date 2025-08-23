@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -69,13 +70,22 @@ public class ProcessController {
     @PostMapping("/processes/{processId}/start")
     public ApiDtos.StartResponse start(@PathVariable("processId") String processId, @RequestBody(required = false) Map<String, Object> vars) {
         DbBackedEngine.InstanceView v = engine.start(processId, vars == null ? Map.of() : vars);
-        return new ApiDtos.StartResponse(v.id.toString(), v.processId, v.tokenAt(), v.completed, v.variables);
+        return new ApiDtos.StartResponse(v.id.toString(), v.processId, v.businessKey, v.tokenAt(), v.completed, v.variables);
+    }
+    
+    @PostMapping("/processes/{processId}/start-with-business-key")
+    public ApiDtos.StartResponse startWithBusinessKey(
+            @PathVariable("processId") String processId,
+            @RequestParam("businessKey") String businessKey,
+            @RequestBody(required = false) Map<String, Object> vars) {
+        DbBackedEngine.InstanceView v = engine.start(processId, businessKey, vars == null ? Map.of() : vars);
+        return new ApiDtos.StartResponse(v.id.toString(), v.processId, v.businessKey, v.tokenAt(), v.completed, v.variables);
     }
 
     @GetMapping("/instances/{instanceId}")
     public ApiDtos.InstanceView instance(@PathVariable("instanceId") String instanceId) {
         DbBackedEngine.InstanceView v = engine.instance(UUID.fromString(instanceId)).orElseThrow();
-        return new ApiDtos.InstanceView(v.id.toString(), v.processId, v.tokenAt(), v.completed, v.variables);
+        return new ApiDtos.InstanceView(v.id.toString(), v.processId, v.businessKey, v.tokenAt(), v.completed, v.variables);
     }
 
     @GetMapping("/instances/{instanceId}/tasks")
@@ -94,7 +104,7 @@ public class ProcessController {
     @PostMapping("/tasks/{taskId}/complete")
     public ApiDtos.InstanceView complete(@PathVariable("taskId") String taskId, @RequestBody(required = false) Map<String, Object> updates) {
         DbBackedEngine.InstanceView v = engine.completeUserTask(UUID.fromString(taskId), updates == null ? Map.of() : updates);
-        return new ApiDtos.InstanceView(v.id.toString(), v.processId, v.tokenAt(), v.completed, v.variables);
+        return new ApiDtos.InstanceView(v.id.toString(), v.processId, v.businessKey, v.tokenAt(), v.completed, v.variables);
     }
     
     /**

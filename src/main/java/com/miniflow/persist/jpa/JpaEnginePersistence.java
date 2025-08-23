@@ -48,11 +48,12 @@ public class JpaEnginePersistence implements EnginePersistencePort {
 // ...imports unchanged, except remove ObjectMapper imports for variables JSON...
 
     @Override
-    public UUID createInstance(String processId, Map<String, Object> vars) {
+    public UUID createInstance(String processId, String businessKey, Map<String, Object> vars) {
         UUID id = UUID.randomUUID();
         WfInstance e = new WfInstance();
         e.id = id;
         e.processId = processId;
+        e.businessKey = businessKey;
         e.status = "RUNNING";
         e.variables = new HashMap<>(vars == null ? Map.of() : vars); // <— no toJson
         e.createdAt = now();

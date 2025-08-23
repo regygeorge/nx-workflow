@@ -62,7 +62,8 @@ public class DbBackedEngine {
     p.deployedAt = OffsetDateTime.now();
     processRepo.save(p);           // <- ensures FK parent row exists
     deployed.put(def.id, def);     // still keep in-memory cache
-  }
+    FlowLogger.describe(def);
+    }
     // Service task handlers registry (Java class callbacks)
     @FunctionalInterface
     public interface ServiceTaskHandler {
@@ -98,13 +99,15 @@ public class DbBackedEngine {
 
         public final UUID id;
         public final String processId;
+        public final String businessKey;
         public final boolean completed;
         public final Map<String, Object> variables;
         public final List<String> activeNodes;
 
-        public InstanceView(UUID id, String processId, boolean completed, Map<String, Object> variables, List<String> activeNodes) {
+        public InstanceView(UUID id, String processId, String businessKey, boolean completed, Map<String, Object> variables, List<String> activeNodes) {
             this.id = id;
             this.processId = processId;
+            this.businessKey = businessKey;
             this.completed = completed;
             this.variables = variables;
             this.activeNodes = activeNodes;
@@ -117,10 +120,16 @@ public class DbBackedEngine {
 
     @Transactional
     public InstanceView start(String processId, Map<String, Object> vars) {
+        return start(processId, null, vars);
+    }
+    
+    @Transactional
+    public InstanceView start(String processId, String businessKey, Map<String, Object> vars) {
         ProcessDefinition def = requireProcess(processId);
-        UUID iid = db.createInstance(processId, vars == null ? Map.of() : vars);
+        UUID iid = db.createInstance(processId, businessKey, vars == null ? Map.of() : vars);
         db.createToken(iid, def.startId());
         runUntilWait(iid, def);
+        FlowLogger.describe(def);
         return snapshot(iid);
     }
 
@@ -373,7 +382,7 @@ public class DbBackedEngine {
         Map<String, Object> v = loadVars(iid);
         List<String> active = db.activeTokens(iid).stream().map(EnginePersistencePort.TokenView::nodeId).collect(Collectors.toList());
         boolean completed = "COMPLETED".equalsIgnoreCase(e.status);
-        return new InstanceView(e.id, e.processId, completed, v, active);
+        return new InstanceView(e.id, e.processId, e.businessKey, completed, v, active);
     }
 
   // DbBackedEngine.java
