@@ -1,7 +1,8 @@
 package com.miniflow.rest;
 
 import com.miniflow.persist.entity.WfInstance;
-import com.miniflow.service.WorkflowEventService;
+import com.miniflow.service.WorkflowAvroEventService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +18,7 @@ import java.util.UUID;
 public class TestController {
 
     @Autowired
-    private WorkflowEventService eventService;
+    private WorkflowAvroEventService eventService;
 
     @GetMapping("/publish")
     public ResponseEntity<String> testPublish() {

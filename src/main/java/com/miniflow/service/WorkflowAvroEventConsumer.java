@@ -1,36 +1,47 @@
 package com.miniflow.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-
+@Slf4j
 @Service
-public class WorkflowAvroEventConsumer {
+class WorkflowAvroEventConsumer {
 
-    private static final Logger logger = LoggerFactory.getLogger(WorkflowAvroEventConsumer.class);
+    @KafkaListener(   topics = "workflow-instance-events",
+            groupId = "miniflow-avro-consumer")
+    public void consume(ConsumerRecord<String, GenericRecord> record,
+                        @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
 
-    @KafkaListener(
-        topics = "workflow-instance-events", 
-        groupId = "miniflow-avro-consumer",
-        containerFactory = "avroKafkaListenerContainerFactory"
-    )
-    public void consumeInstanceEvent(Object event) {
-        logger.info("Received Avro instance event: {}", event);
-        logger.info("Event class: {}", event.getClass().getName());
+        GenericRecord value = record.value();
+
+        System.out.println("📥 Topic: " + topic);
+        System.out.println("🔑 Key:   " + record.key());
+        System.out.println("🧾 Avro record: " + value);
+        System.out.println("Patient: " + value.get("patient_id"));
+        System.out.println("Doctor:  " + value.get("doctor_id"));
+        System.out.println("Visit:   " + value.get("visit_type"));
     }
 
-    @KafkaListener(
-        topics = "workflow-step-events", 
-        groupId = "miniflow-avro-consumer",
-        containerFactory = "avroKafkaListenerContainerFactory"
-    )
-    public void consumeStepEvent(Object event) {
-        logger.info("Received Avro step event: {}", event);
-        logger.info("Event class: {}", event.getClass().getName());
+
+    @KafkaListener(topics = "workflow-instance-events-avro", groupId = "miniflow-test-consumer")
+    public void consumeInstanceEvent(ConsumerRecord<String, GenericRecord> record,
+                                     @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
+        GenericRecord value = record.value();
+
+        log.info("Received instance event: {}", value.get("variables"));
     }
+
+    @KafkaListener(topics = "workflow-step-events-avro", groupId = "miniflow-test-consumer")
+    public void consumeStepEvent(ConsumerRecord<String, GenericRecord> record,
+                                 @Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
+        GenericRecord value = record.value();
+        log.info("Received step event: {}", value.get("variables"));
+    }
+
+
+
 }
-
-// Made with Bob

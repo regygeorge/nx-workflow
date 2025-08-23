@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.miniflow.service.WorkflowAvroEventService;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +24,7 @@ import com.miniflow.persist.repo.WfJoinRepo;
 import com.miniflow.persist.repo.WfTaskRepo;
 import com.miniflow.persist.repo.WfTokenRepo;
 import com.miniflow.persist.repo.WfVariableRepo;
-import com.miniflow.service.WorkflowEventService;
+
 
 import jakarta.transaction.Transactional;
 
@@ -37,7 +38,7 @@ public class JpaEnginePersistence implements EnginePersistencePort {
     private final WfJoinRepo joinRepo;
     private final WfVariableRepo varRepo;
     private final ObjectMapper om = new ObjectMapper();
-    private final WorkflowEventService eventService;
+    private final WorkflowAvroEventService eventService;
 
     public JpaEnginePersistence(
             WfInstanceRepo i,
@@ -45,7 +46,7 @@ public class JpaEnginePersistence implements EnginePersistencePort {
             WfTaskRepo tr,
             WfJoinRepo j,
             WfVariableRepo v,
-            WorkflowEventService eventService) {
+            WorkflowAvroEventService eventService) {
         this.instanceRepo = i;
         this.tokenRepo = t;
         this.taskRepo = tr;
