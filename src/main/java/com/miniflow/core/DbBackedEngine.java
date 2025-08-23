@@ -64,7 +64,9 @@ public class DbBackedEngine {
     p.deployedAt = OffsetDateTime.now();
     processRepo.save(p);           // <- ensures FK parent row exists
     deployed.put(def.id, def);     // still keep in-memory cache
+
       log.debug("\n{}", FlowLogger.describe(def));
+
     }
     // Service task handlers registry (Java class callbacks)
     @FunctionalInterface
@@ -131,7 +133,9 @@ public class DbBackedEngine {
         UUID iid = db.createInstance(processId, businessKey, vars == null ? Map.of() : vars);
         db.createToken(iid, def.startId());
         runUntilWait(iid, def);
+
         log.debug("\n{}", FlowLogger.describe(def));
+
         return snapshot(iid);
     }
 

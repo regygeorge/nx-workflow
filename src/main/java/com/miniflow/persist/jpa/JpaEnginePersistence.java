@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.miniflow.service.WorkflowAvroEventService;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,6 +25,7 @@ import com.miniflow.persist.repo.WfTaskRepo;
 import com.miniflow.persist.repo.WfTokenRepo;
 import com.miniflow.persist.repo.WfVariableRepo;
 
+
 import jakarta.transaction.Transactional;
 
 @Component
@@ -36,13 +38,21 @@ public class JpaEnginePersistence implements EnginePersistencePort {
     private final WfJoinRepo joinRepo;
     private final WfVariableRepo varRepo;
     private final ObjectMapper om = new ObjectMapper();
+    private final WorkflowAvroEventService eventService;
 
-    public JpaEnginePersistence(WfInstanceRepo i, WfTokenRepo t, WfTaskRepo tr, WfJoinRepo j, WfVariableRepo v) {
+    public JpaEnginePersistence(
+            WfInstanceRepo i,
+            WfTokenRepo t,
+            WfTaskRepo tr,
+            WfJoinRepo j,
+            WfVariableRepo v,
+            WorkflowAvroEventService eventService) {
         this.instanceRepo = i;
         this.tokenRepo = t;
         this.taskRepo = tr;
         this.joinRepo = j;
         this.varRepo = v;
+        this.eventService = eventService;
     }
 // src/main/java/com/miniflow/persist/jpa/JpaEnginePersistence.java
 // ...imports unchanged, except remove ObjectMapper imports for variables JSON...
@@ -59,12 +69,22 @@ public class JpaEnginePersistence implements EnginePersistencePort {
         e.createdAt = now();
         e.updatedAt = now();
         instanceRepo.save(e);
+        
+        // Publish instance created event
+        eventService.publishInstanceCreatedEvent(e, e.variables);
+        
         return id;
     }
 
     @Override
     public void markInstanceCompleted(UUID instanceId) {
-
+        WfInstance e = instanceRepo.findById(instanceId).orElseThrow();
+        e.status = "COMPLETED";
+        e.updatedAt = now();
+        instanceRepo.save(e);
+        
+        // Publish instance completed event
+        eventService.publishInstanceCompletedEvent(e, e.variables);
     }
 
     @Override
@@ -150,6 +170,11 @@ public class JpaEnginePersistence implements EnginePersistencePort {
         t.state = "OPEN";
         t.createdAt = now();
         taskRepo.save(t);
+        
+        // Publish task created event
+        WfInstance instance = instanceRepo.findById(instanceId).orElseThrow();
+        eventService.publishTaskCreatedEvent(t, instance, "USER_TASK", instance.variables);
+        
         return id;
     }
     
@@ -166,6 +191,11 @@ public class JpaEnginePersistence implements EnginePersistencePort {
         t.createdAt = now();
         t.dueDateTime = dueDateTime;
         taskRepo.save(t);
+        
+        // Publish task created event
+        WfInstance instance = instanceRepo.findById(instanceId).orElseThrow();
+        eventService.publishTaskCreatedEvent(t, instance, "USER_TASK", instance.variables);
+        
         return id;
     }
 
@@ -175,6 +205,10 @@ public class JpaEnginePersistence implements EnginePersistencePort {
         t.state = "COMPLETED";
         t.completedAt = now();
         taskRepo.save(t);
+        
+        // Publish task completed event
+        WfInstance instance = instanceRepo.findById(t.instanceId).orElseThrow();
+        eventService.publishTaskCompletedEvent(t, instance, "USER_TASK", instance.variables);
     }
 
     @Override

@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/miniflow
     username: postgres
-    password: postgres
+    password: root123
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -17,6 +17,23 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: hms-appointments-service
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      properties:
+        schema.registry.url: http://localhost:8081
+        specific.avro.reader: false
+      auto-offset-reset: earliest
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      properties:
+        schema.registry.url: http://localhost:8081
 server:
   port: 8084
 logging:
