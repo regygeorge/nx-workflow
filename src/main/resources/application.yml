@@ -8,7 +8,6 @@ spring:
     hibernate:
       ddl-auto: validate
       dialect: org.hibernate.dialect.PostgreSQLDialect
-
     properties:
       hibernate.jdbc.time_zone: UTC
       hibernate.format_sql: true
@@ -17,11 +16,14 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
 server:
   port: 8084
+
 logging:
   level:
     org.springframework.web: INFO
+    com.miniflow.config.tenant: DEBUG
 
 kafka:
   bootstrap-servers: localhost:9092
@@ -38,3 +40,25 @@ kafka:
     value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
     properties:
       schema.registry.url: http://localhost:8081
+
+# Multi-tenant configuration
+tenants:
+  default-tenant: default
+  configs:
+    default:
+      url: jdbc:postgresql://localhost:5432/miniflow
+      username: postgres
+      password: postgres
+      driver-class-name: org.postgresql.Driver
+    tenant1:
+      url: jdbc:postgresql://localhost:5432/miniflow_tenant1
+      username: postgres
+      password: postgres
+      driver-class-name: org.postgresql.Driver
+    tenant2:
+      url: jdbc:postgresql://localhost:5432/miniflow_tenant2
+      username: postgres
+      password: postgres
+      driver-class-name: org.postgresql.Driver
+
+# Made with Bob

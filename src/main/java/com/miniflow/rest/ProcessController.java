@@ -45,8 +45,6 @@ public class ProcessController {
         this.taskRepo = taskRepo;
     }
 
-
-
     // ...
     @PostMapping(value="/deploy/bpmn", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiDtos.DeployResponse deploy(@RequestPart("file") MultipartFile file) throws IOException {
@@ -60,7 +58,6 @@ public class ProcessController {
             }
         return new ApiDtos.DeployResponse(def.id);
     }
-
 
     @GetMapping("/processes")
     public Set<String> processes() {

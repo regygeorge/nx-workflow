@@ -33,7 +33,12 @@ public class WorkflowEventService {
         event.put("processId", instance.processId);
         event.put("businessKey", instance.businessKey);
         event.put("status", instance.status);
-        event.put("variables", convertVariables(variables));
+        
+        // Convert variables to a format compatible with Avro
+        Map<String, Object> convertedVars = convertVariables(variables);
+        if (convertedVars != null) {
+            event.put("variables", convertedVars);
+        }
 
         kafkaTemplate.send(INSTANCE_TOPIC, instance.id.toString(), event);
     }
@@ -47,7 +52,12 @@ public class WorkflowEventService {
         event.put("processId", instance.processId);
         event.put("businessKey", instance.businessKey);
         event.put("status", instance.status);
-        event.put("variables", convertVariables(variables));
+        
+        // Convert variables to a format compatible with Avro
+        Map<String, Object> convertedVars = convertVariables(variables);
+        if (convertedVars != null) {
+            event.put("variables", convertedVars);
+        }
 
         kafkaTemplate.send(INSTANCE_TOPIC, instance.id.toString(), event);
     }
@@ -65,7 +75,12 @@ public class WorkflowEventService {
         event.put("nodeType", nodeType);
         event.put("taskId", task.id.toString());
         event.put("status", task.state);
-        event.put("variables", convertVariables(variables));
+        
+        // Convert variables to a format compatible with Avro
+        Map<String, Object> convertedVars = convertVariables(variables);
+        if (convertedVars != null) {
+            event.put("variables", convertedVars);
+        }
 
         kafkaTemplate.send(STEP_TOPIC, task.id.toString(), event);
     }
@@ -83,7 +98,12 @@ public class WorkflowEventService {
         event.put("nodeType", nodeType);
         event.put("taskId", task.id.toString());
         event.put("status", task.state);
-        event.put("variables", convertVariables(variables));
+        
+        // Convert variables to a format compatible with Avro
+        Map<String, Object> convertedVars = convertVariables(variables);
+        if (convertedVars != null) {
+            event.put("variables", convertedVars);
+        }
 
         kafkaTemplate.send(STEP_TOPIC, task.id.toString(), event);
     }

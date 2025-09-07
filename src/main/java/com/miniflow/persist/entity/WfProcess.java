@@ -12,7 +12,10 @@ public class WfProcess {
     @Column(name = "process_id")
     public String processId;
     public String name;
-    @Column(columnDefinition = "text")
+    @Column(name = "bpmn_xml", columnDefinition = "text")
     public String bpmnXml;
+    @Column(name = "deployed_at")
     public OffsetDateTime deployedAt;
 }
+
+// Made with Bob

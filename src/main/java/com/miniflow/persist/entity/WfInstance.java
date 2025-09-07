@@ -12,7 +12,9 @@ import org.hibernate.type.SqlTypes;
 public class WfInstance {
     @Id public UUID id;
 
+    @Column(name = "process_id")
     public String processId;
+    @Column(name = "business_key")
     public String businessKey;
     public String status;
 
@@ -21,6 +23,9 @@ public class WfInstance {
     @Column(columnDefinition = "jsonb")
     public Map<String, Object> variables = new HashMap<>();
 
+    @Column(name = "created_at")
     public OffsetDateTime createdAt;
+    
+    @Column(name = "updated_at")
     public OffsetDateTime updatedAt;
 }

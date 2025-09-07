@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: miniflow-config
+data:
+  application.yml: |
+    spring:
+      datasource:
+        url: jdbc:postgresql://miniflow-db:5432/miniflow
+        driver-class-name: org.postgresql.Driver
+      jpa:
+        hibernate:
+          ddl-auto: validate
+          dialect: org.hibernate.dialect.PostgreSQLDialect
+        properties:
+          hibernate.jdbc.time_zone: UTC
+          hibernate.format_sql: true
+          hibernate.type.preferred_json_mapper: jackson
+      flyway:
+        enabled: true
+        locations: classpath:db/migration
+    server:
+      port: 8084
+    logging:
+      level:
+        org.springframework.web: INFO
+    kafka:
+      bootstrap-servers: kafka:9092
+      consumer:
+        group-id: hms-appointments-service
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+        properties:
+          schema.registry.url: http://schema-registry:8081
+          specific.avro.reader: false
+        auto-offset-reset: earliest
+      producer:
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+        properties:
+          schema.registry.url: http://schema-registry:8081
+
+# Made with Bob
