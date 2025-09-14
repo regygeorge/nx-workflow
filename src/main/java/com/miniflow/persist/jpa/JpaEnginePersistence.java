@@ -10,16 +10,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.miniflow.persist.entity.*;
 import com.miniflow.persist.repo.*;
 import com.miniflow.service.WorkflowAvroEventService;
 import org.postgresql.util.PGobject;
+
+import com.miniflow.service.WorkflowAvroEventService;
+
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.miniflow.persist.EnginePersistencePort;
+
 
 
 import jakarta.transaction.Transactional;
@@ -43,20 +48,25 @@ public class JpaEnginePersistence implements EnginePersistencePort {
 
     private final WfTaskCandidateRepo taskCandidateRepo;
 
+
     public JpaEnginePersistence(
             WfInstanceRepo i,
             WfTokenRepo t,
             WfTaskRepo tr,
             WfJoinRepo j,
             WfVariableRepo v,
+ 
             WorkflowAvroEventService eventService, WfTaskCandidateRepo taskCandidateRepo) {
+ 
         this.instanceRepo = i;
         this.tokenRepo = t;
         this.taskRepo = tr;
         this.joinRepo = j;
         this.varRepo = v;
         this.eventService = eventService;
+ 
         this.taskCandidateRepo = taskCandidateRepo;
+ 
     }
 // src/main/java/com/miniflow/persist/jpa/JpaEnginePersistence.java
 // ...imports unchanged, except remove ObjectMapper imports for variables JSON...
@@ -163,7 +173,27 @@ public class JpaEnginePersistence implements EnginePersistencePort {
         joinRepo.deleteById(new WfJoin.PK(instanceId, nodeId));
     }
 
-
+ 
+    @Override
+    public UUID createUserTask(UUID instanceId, UUID tokenId, String nodeId, String name) {
+        UUID id = UUID.randomUUID();
+        WfTask t = new WfTask();
+        t.id = id;
+        t.instanceId = instanceId;
+        t.tokenId = tokenId;
+        t.nodeId = nodeId;
+        t.name = name;
+        t.state = "OPEN";
+        t.createdAt = now();
+        taskRepo.save(t);
+        
+        // Publish task created event
+        WfInstance instance = instanceRepo.findById(instanceId).orElseThrow();
+        eventService.publishTaskCreatedEvent(t, instance, "USER_TASK", instance.variables);
+        
+        return id;
+    }
+ 
     
     @Override
     public UUID createUserTaskWithDueDate(UUID instanceId, UUID tokenId, String nodeId, String name, OffsetDateTime dueDateTime) {

@@ -13,6 +13,7 @@ import com.miniflow.persist.repo.WfInstanceRepo;
 import com.miniflow.persist.repo.WfProcessRepo;
 import com.miniflow.persist.repo.WfTaskRepo;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -26,7 +27,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.UUID;
 
+
 import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
+
+
+@Slf4j
 
 @Service
 public class DbBackedEngine {
@@ -65,7 +70,10 @@ public class DbBackedEngine {
     p.deployedAt = OffsetDateTime.now();
     processRepo.save(p);           // <- ensures FK parent row exists
     deployed.put(def.id, def);     // still keep in-memory cache
-    FlowLogger.describe(def);
+
+
+      log.debug("\n{}", FlowLogger.describe(def));
+
     }
     // Service task handlers registry (Java class callbacks)
     @FunctionalInterface
@@ -132,7 +140,11 @@ public class DbBackedEngine {
         UUID iid = db.createInstance(processId, businessKey, vars == null ? Map.of() : vars);
         db.createToken(iid, def.startId());
         runUntilWait(iid, def);
-        FlowLogger.describe(def);
+
+
+
+        log.debug("\n{}", FlowLogger.describe(def));
+
         return snapshot(iid);
     }
 
@@ -177,7 +189,7 @@ public class DbBackedEngine {
         for (SequenceFlow f : outs) db.createToken(iid, f.to);
       }
       runUntilWait(iid, def);
-
+        log.debug("\n{}", FlowLogger.logTask(t));
         return snapshot(iid);
     }
 
@@ -224,6 +236,7 @@ public class DbBackedEngine {
                         SequenceFlow out = chooseOutgoing(vars, node);
                         db.moveToken(tv.tokenId(), out.to);
                         progressed = true;
+
                     }
                     case USER_TASK -> {
 
@@ -412,6 +425,7 @@ public class DbBackedEngine {
         List<String> active = db.activeTokens(iid).stream().map(EnginePersistencePort.TokenView::nodeId).collect(Collectors.toList());
         boolean completed = "COMPLETED".equalsIgnoreCase(e.status);
         return new InstanceView(e.id, e.processId, e.businessKey, completed, v, active);
+
     }
 
 
@@ -428,6 +442,7 @@ public class DbBackedEngine {
 
     private static Map<String,Object> safeVars(Map<String,Object> vars) {
         return (vars == null) ? java.util.Collections.emptyMap() : vars;
+
     }
 
     private static boolean passesFailOpen(EngineModel.SequenceFlow f, Map<String,Object> vars) {

@@ -83,11 +83,14 @@
         <zeebe:assignmentDefinition candidateGroups="Nurses,Cardiology,Lab" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0phx2kk</bpmn:incoming>
+ 
       <bpmn:outgoing>Flow_1877klw</bpmn:outgoing>
+ 
     </bpmn:userTask>
     <bpmn:startEvent id="StartEvent_1" name="start">
       <bpmn:outgoing>Flow_1ipugf9</bpmn:outgoing>
     </bpmn:startEvent>
+ 
     <bpmn:endEvent id="Event_1f5276a">
       <bpmn:incoming>Flow_1877klw</bpmn:incoming>
     </bpmn:endEvent>
@@ -99,6 +102,7 @@
         <dc:Bounds x="560" y="78" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1i2wx1q_di" bpmnElement="Activity_doctor2">
+ 
         <dc:Bounds x="920" y="270" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1w36ikw_di" bpmnElement="Event_1w36ikw">
@@ -107,11 +111,13 @@
           <dc:Bounds x="950" y="48" width="19" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+ 
       <bpmndi:BPMNShape id="Activity_1iaiw77_di" bpmnElement="Activity_frontoffice">
         <dc:Bounds x="320" y="78" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_11r652b_di" bpmnElement="Activity_lab">
+ 
         <dc:Bounds x="710" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1dgwbni_di" bpmnElement="Activity_pharmacy">
@@ -123,8 +129,10 @@
           <dc:Bounds x="157" y="143" width="23" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+ 
       <bpmndi:BPMNShape id="Event_1f5276a_di" bpmnElement="Event_1f5276a">
         <dc:Bounds x="592" y="402" width="36" height="36" />
+ 
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_018o8hy_di" bpmnElement="Flow_018o8hy">
         <di:waypoint x="420" y="118" />
@@ -159,9 +167,12 @@
         <di:waypoint x="850" y="280" />
         <di:waypoint x="920" y="280" />
       </bpmndi:BPMNEdge>
+ 
       <bpmndi:BPMNEdge id="Flow_1877klw_di" bpmnElement="Flow_1877klw">
         <di:waypoint x="610" y="350" />
         <di:waypoint x="610" y="402" />
+ 
+ 
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

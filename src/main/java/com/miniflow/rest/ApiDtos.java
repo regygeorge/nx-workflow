@@ -14,6 +14,7 @@ import java.util.UUID;
 
 public class ApiDtos {
 
+ 
     // --- response shapes (as you had) ---
     public record DeployResponse(String processId) {}
     public record StartResponse(
@@ -36,13 +37,14 @@ public class ApiDtos {
             String nodeId,
             String name,
             String dueDateTime) {}
+ 
 
     // --- simple factories you can call from controllers/services ---
 
     public static DeployResponse fromProcessId(String processId) {
         return new DeployResponse(processId);
     }
-
+ 
     /** Map an engine snapshot (returned by start/instance) to StartResponse. */
     public static StartResponse fromEngineStart(DbBackedEngine.InstanceView iv, String businessKey) {
         return new StartResponse(
@@ -53,6 +55,9 @@ public class ApiDtos {
                 iv.completed,
                 iv.variables);
     }
+ 
+   // public record InstanceView(String instanceId, String processId, String businessKey, String tokenAt, boolean completed, Map<String, Object> variables) {
+ 
 
     /** Map an engine snapshot (returned by instance/snapshot) to InstanceView. */
     public static InstanceView fromEngineInstance(DbBackedEngine.InstanceView iv, String businessKey) {
