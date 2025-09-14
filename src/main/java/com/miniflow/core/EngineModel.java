@@ -24,6 +24,8 @@ public class EngineModel {
     public final String id, name; public final NodeType type;
     public final List<SequenceFlow> outgoing = new ArrayList<>();
     public final List<SequenceFlow> incoming = new ArrayList<>();
+    public final Map<String, String> props = new HashMap<>();
+
     protected Node(String id, String name, NodeType t){ this.id=id; this.name=(name==null||name.isBlank()?id:name); this.type=t; }
   }
   public static class StartEvent extends Node { public StartEvent(String id, String name){ super(id,name,NodeType.START);} }
@@ -39,7 +41,9 @@ public class EngineModel {
   public static class ParallelGateway  extends Node { public ParallelGateway(String id, String name){ super(id,name,NodeType.PARALLEL_GATEWAY);} }
 
   @FunctionalInterface public interface Condition { boolean eval(Map<String,Object> vars); }
-  public static class SequenceFlow { public final String id, from, to; public final Condition condition; public SequenceFlow(String id,String from,String to,Condition c){ this.id=id; this.from=from; this.to=to; this.condition=c; } }
+  public static class SequenceFlow { public final String id, from, to;
+    public final Condition condition;
+    public SequenceFlow(String id,String from,String to,Condition c){ this.id=id; this.from=from; this.to=to; this.condition=c; } }
 
   public static class Builder {
     private final ProcessDefinition def; private final Map<String,Node> nodes = new HashMap<>();

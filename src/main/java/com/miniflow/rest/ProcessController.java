@@ -6,12 +6,16 @@ package com.miniflow.rest;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import com.miniflow.dto.TaskSummaryDTO;
+import com.miniflow.dto.TaskSummaryView;
+import com.miniflow.service.TaskQueryService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.miniflow.core.DbBackedEngine;
-import com.miniflow.core.EngineModel.*;
 import com.miniflow.core.EngineModel.Node;
 import com.miniflow.core.EngineModel.NodeType;
 import com.miniflow.core.EngineModel.ProcessDefinition;
@@ -32,15 +35,18 @@ import com.miniflow.core.EngineModel.ServiceTask;
 import com.miniflow.parser.SimpleBpmnParser;
 import com.miniflow.persist.entity.WfTask;
 import com.miniflow.persist.repo.WfTaskRepo;
-import java.nio.charset.StandardCharsets;
+
 @RestController
 @RequestMapping("/api")
 public class ProcessController {
 
+
+    private final TaskQueryService svc;
     private final DbBackedEngine engine;
     private final WfTaskRepo taskRepo;
 
-    public ProcessController(DbBackedEngine engine, WfTaskRepo taskRepo) {
+    public ProcessController(TaskQueryService svc, DbBackedEngine engine, WfTaskRepo taskRepo) {
+        this.svc = svc;
         this.engine = engine;
         this.taskRepo = taskRepo;
     }
@@ -122,4 +128,46 @@ public class ProcessController {
         OffsetDateTime dueDateTime = OffsetDateTime.parse(dueDateTimeStr);
         engine.setTaskDueDate(UUID.fromString(taskId), dueDateTime);
     }
+
+    @GetMapping("/tasks")
+    public List<ApiDtos.TaskView> listTasks(
+            @RequestParam(required=false) String assignee,
+            @RequestParam(required=false) String candidateUser,
+            @RequestParam(required=false) String groups // comma list: "doctors,nurses"
+    ){
+        if (assignee != null && !assignee.isBlank()) {
+            return taskRepo.findByAssigneeAndState(assignee, "OPEN")
+                    .stream().map(ApiDtos::from).toList();
+        }
+        if (candidateUser != null) {
+            List<String> g = (groups==null||groups.isBlank()) ? List.of()
+                    : Arrays.stream(groups.split(",")).map(String::trim).toList();
+            return taskRepo.findOpenForUserOrGroups(candidateUser, (String[]) g.toArray())
+                    .stream().map(ApiDtos::from).toList();
+        }
+        // default: all OPEN tasks
+        return taskRepo.findAll().stream()
+                .filter(t -> "OPEN".equals(t.state))
+                .map(ApiDtos::from).toList();
+    }
+
+
+    @GetMapping("/tasks/assignee-view")
+    public Page<TaskSummaryView> listByAssignee(
+            @RequestParam String assignee,
+            @RequestParam(required = false) String state,
+            @PageableDefault(size = 20, sort = "dueDateTime", direction = Sort.Direction.ASC)
+            Pageable pageable) {
+        return taskRepo.findByAssignee(assignee, state, pageable);
+    }
+
+    @GetMapping("/tasks/assignee")
+    public Page<TaskSummaryDTO> listByAssigneeAndGroup(
+            @RequestParam String assignee,
+            @RequestParam(required = false) String state,
+            @PageableDefault(size = 20, sort = "dueDateTime", direction = Sort.Direction.ASC)
+            Pageable pageable) {
+        return taskRepo.findTaskSummariesByAssignee(assignee, state, pageable);
+    }
+
 }

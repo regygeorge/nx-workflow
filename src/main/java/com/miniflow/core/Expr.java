@@ -7,6 +7,7 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
+
 /**
  * Expression evaluator for BPMN conditions using Spring Expression Language (SpEL)
  */
@@ -28,7 +29,9 @@ public class Expr {
         // Handle SpEL expressions with #{...} or ${...} syntax
         String actualExpr = expr;
         if ((expr.startsWith("#{") && expr.endsWith("}")) ||
-            (expr.startsWith("${") && expr.endsWith("}"))) {
+            (expr.startsWith("${") && expr.endsWith("}"))||
+                (expr.startsWith("={") && expr.endsWith("}"))) {
+
             actualExpr = expr.substring(2, expr.length() - 1);
         }
         
@@ -91,6 +94,13 @@ public class Expr {
         return false;
     }
 
+    /** Evaluate and coerce to String (null on errors). */
+    public static String evalString(String expr, Map<String,Object> vars) {
+        Object r = eval(expr, vars);
+        return (r == null) ? null : String.valueOf(r);
+    }
+
+
     /**
      * Checks if a variable exists in the variables map
      * 
@@ -104,6 +114,5 @@ public class Expr {
         }
         return vars.containsKey(varName);
     }
-}
 
-// Made with Bob
+}

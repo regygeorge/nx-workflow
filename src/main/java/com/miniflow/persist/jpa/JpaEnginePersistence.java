@@ -10,23 +10,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.miniflow.persist.entity.*;
+import com.miniflow.persist.repo.*;
 import com.miniflow.service.WorkflowAvroEventService;
+import org.postgresql.util.PGobject;
+
+import com.miniflow.service.WorkflowAvroEventService;
+
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.miniflow.persist.EnginePersistencePort;
-import com.miniflow.persist.entity.WfInstance;
-import com.miniflow.persist.entity.WfJoin;
-import com.miniflow.persist.entity.WfTask;
-import com.miniflow.persist.entity.WfToken;
-import com.miniflow.persist.repo.WfInstanceRepo;
-import com.miniflow.persist.repo.WfJoinRepo;
-import com.miniflow.persist.repo.WfTaskRepo;
-import com.miniflow.persist.repo.WfTokenRepo;
-import com.miniflow.persist.repo.WfVariableRepo;
+
 
 
 import jakarta.transaction.Transactional;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 
 @Component
 @Transactional
@@ -40,19 +46,27 @@ public class JpaEnginePersistence implements EnginePersistencePort {
     private final ObjectMapper om = new ObjectMapper();
     private final WorkflowAvroEventService eventService;
 
+    private final WfTaskCandidateRepo taskCandidateRepo;
+
+
     public JpaEnginePersistence(
             WfInstanceRepo i,
             WfTokenRepo t,
             WfTaskRepo tr,
             WfJoinRepo j,
             WfVariableRepo v,
-            WorkflowAvroEventService eventService) {
+ 
+            WorkflowAvroEventService eventService, WfTaskCandidateRepo taskCandidateRepo) {
+ 
         this.instanceRepo = i;
         this.tokenRepo = t;
         this.taskRepo = tr;
         this.joinRepo = j;
         this.varRepo = v;
         this.eventService = eventService;
+ 
+        this.taskCandidateRepo = taskCandidateRepo;
+ 
     }
 // src/main/java/com/miniflow/persist/jpa/JpaEnginePersistence.java
 // ...imports unchanged, except remove ObjectMapper imports for variables JSON...
@@ -95,6 +109,7 @@ public class JpaEnginePersistence implements EnginePersistencePort {
         e.variables = next; // <— no toJson
         e.updatedAt = now();
         instanceRepo.save(e);
+        upsertVariablesTable(instanceId, next);
     }
 
     @Override
@@ -158,6 +173,7 @@ public class JpaEnginePersistence implements EnginePersistencePort {
         joinRepo.deleteById(new WfJoin.PK(instanceId, nodeId));
     }
 
+ 
     @Override
     public UUID createUserTask(UUID instanceId, UUID tokenId, String nodeId, String name) {
         UUID id = UUID.randomUUID();
@@ -177,6 +193,7 @@ public class JpaEnginePersistence implements EnginePersistencePort {
         
         return id;
     }
+ 
     
     @Override
     public UUID createUserTaskWithDueDate(UUID instanceId, UUID tokenId, String nodeId, String name, OffsetDateTime dueDateTime) {
@@ -236,4 +253,109 @@ public class JpaEnginePersistence implements EnginePersistencePort {
             throw new RuntimeException(e);
         }
     }
+
+
+
+
+
+    @Override
+    public UUID createUserTask(UUID instanceId, UUID tokenId, String nodeId,
+                               String name, String formKey,
+                               String assignee, List<String> candidateUsers,
+                               List<String> candidateGroups,
+                               Integer priority, OffsetDateTime dueDate) {
+        UUID id = UUID.randomUUID();
+        WfTask t = new WfTask();
+        t.id = id;
+        t.instanceId = instanceId;
+        t.tokenId = tokenId;
+        t.nodeId = nodeId;
+        t.name = name;
+        t.state = "OPEN";
+        t.createdAt = now();
+        t.assignee = assignee;
+
+        taskRepo.save(t);
+
+
+        // save candidates
+        List<WfTaskCandidate> rows = new ArrayList<>();
+        for (String u : sanitize(candidateUsers)) {
+            WfTaskCandidate c = new WfTaskCandidate();
+            c.taskId = id; c.type = "U"; c.candidate = u;
+            rows.add(c);
+        }
+        for (String g : sanitize(candidateGroups)) {
+            WfTaskCandidate c = new WfTaskCandidate();
+            c.taskId = id; c.type = "G"; c.candidate = g;
+            rows.add(c);
+        }
+        if (!rows.isEmpty()) taskCandidateRepo.saveAll(rows);
+
+        // Publish task created event
+        WfInstance instance = instanceRepo.findById(instanceId).orElseThrow();
+        eventService.publishTaskCreatedEvent(t, instance, "USER_TASK", instance.variables);
+
+        return id;
+    }
+
+    private static List<String> sanitize(List<String> in) {
+        if (in == null || in.isEmpty()) return List.of();
+        return in.stream().filter(s -> s != null && !s.isBlank())
+                .map(String::trim).distinct().toList();
+    }
+    // In your persistence adapter (e.g., JpaEnginePersistence)
+
+
+    private static final ObjectMapper JSON = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+    /** Persist each entry as JSON text; DB generates jsonb for querying. */
+    private void upsertVariablesTable(UUID instanceId, Map<String, Object> vars) {
+        if (vars == null || vars.isEmpty()) return;
+
+        List<WfVariable> batch = new ArrayList<>(vars.size());
+        for (var e : vars.entrySet()) {
+            String key = e.getKey();
+            Object val = e.getValue();
+
+            WfVariable row = varRepo.findByInstanceIdAndKey(instanceId, key)
+                    .orElseGet(() -> {
+                        WfVariable v = new WfVariable();
+                        v.instanceId = instanceId;
+                        v.key = key;
+                        return v;
+                    });
+
+            try {
+                // Always store canonical JSON text (so strings become "..." etc.)
+                row.valueText = JSON.writeValueAsString(val);
+            } catch (Exception ex) {
+                throw new IllegalStateException("Failed to JSON-serialize variable '" + key + "'", ex);
+            }
+
+            batch.add(row);
+        }
+
+        varRepo.saveAll(batch);     // @UpdateTimestamp sets updated_at
+        // varRepo.flush();          // optional
+    }
+
+
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    private static PGobject toJsonb(Object value) {
+        try {
+            PGobject pg = new PGobject();
+            pg.setType("jsonb");
+            pg.setValue(MAPPER.writeValueAsString(value)); // serialize anything to JSON
+            return pg;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to convert to jsonb", e);
+        }
+    }
+
+
 }

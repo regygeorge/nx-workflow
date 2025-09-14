@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 package com.miniflow.persist;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -28,7 +29,9 @@ public interface EnginePersistencePort {
 
     void resetJoin(UUID instanceId, String nodeId);
 
-    UUID createUserTask(UUID instanceId, UUID tokenId, String nodeId, String name);
+    UUID createUserTask(UUID instanceId, UUID tokenId, String nodeId, String name, String formKey,
+                        String assignee, List<String> candidateUsers, List<String> candidateGroups,
+                        Integer priority, OffsetDateTime dueDate);
     
     UUID createUserTaskWithDueDate(UUID instanceId, UUID tokenId, String nodeId, String name, java.time.OffsetDateTime dueDateTime);
 
