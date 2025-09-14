@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface WfVariableRepo extends JpaRepository<WfVariable, WfVariable.PK> {
 
     List<WfVariable> findByInstanceId(UUID instanceId);
+    Optional<WfVariable> findByInstanceIdAndKey(UUID instanceId, String key);
 }

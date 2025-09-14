@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="a71ebc4" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.38.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
   <bpmn:process id="Process_hims_op" name="HIMS" isExecutable="true">
     <bpmn:extensionElements>
       <zeebe:versionTag value="1" />
     </bpmn:extensionElements>
-    <bpmn:userTask id="Activity_1ivtapq" name="doctor">
+    <bpmn:userTask id="Activity_doctor1" name="doctor">
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:ioMapping>
@@ -13,16 +13,18 @@
           <zeebe:output source="=&#34;&#34;" target="dueDateTime" />
         </zeebe:ioMapping>
         <zeebe:formDefinition externalReference="doctorui" />
+        <zeebe:assignmentDefinition assignee="doctor01" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_018o8hy</bpmn:incoming>
       <bpmn:outgoing>Flow_0kirys8</bpmn:outgoing>
       <bpmn:outgoing>Flow_0phx2kk</bpmn:outgoing>
       <bpmn:outgoing>Flow_0igqmgs</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Activity_1xh8jvw" name="Doctor">
+    <bpmn:userTask id="Activity_doctor2" name="Doctor">
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:formDefinition externalReference="doctor" />
+        <zeebe:assignmentDefinition assignee="doctor01" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_1jc9prq</bpmn:incoming>
       <bpmn:outgoing>Flow_15jpmz7</bpmn:outgoing>
@@ -31,18 +33,18 @@
       <bpmn:incoming>Flow_0kirys8</bpmn:incoming>
       <bpmn:incoming>Flow_15jpmz7</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_018o8hy" sourceRef="Activity_0jtfxfy" targetRef="Activity_1ivtapq" />
-    <bpmn:sequenceFlow id="Flow_0igqmgs" sourceRef="Activity_1ivtapq" targetRef="Activity_1l2odrk">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{lab == true}</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="Flow_018o8hy" sourceRef="Activity_frontoffice" targetRef="Activity_doctor1" />
+    <bpmn:sequenceFlow id="Flow_0igqmgs" sourceRef="Activity_doctor1" targetRef="Activity_lab">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">={lab == true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_0kirys8" sourceRef="Activity_1ivtapq" targetRef="Event_1w36ikw" />
-    <bpmn:sequenceFlow id="Flow_0phx2kk" sourceRef="Activity_1ivtapq" targetRef="Activity_11wjzoc">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{pharmacy == true}</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="Flow_0kirys8" sourceRef="Activity_doctor1" targetRef="Event_1w36ikw" />
+    <bpmn:sequenceFlow id="Flow_0phx2kk" sourceRef="Activity_doctor1" targetRef="Activity_pharmacy">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">={pharmacy == true}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_15jpmz7" sourceRef="Activity_1xh8jvw" targetRef="Event_1w36ikw" />
-    <bpmn:sequenceFlow id="Flow_1ipugf9" sourceRef="StartEvent_1" targetRef="Activity_0jtfxfy" />
-    <bpmn:sequenceFlow id="Flow_1jc9prq" sourceRef="Activity_1l2odrk" targetRef="Activity_1xh8jvw" />
-    <bpmn:userTask id="Activity_0jtfxfy" name="frontoffice">
+    <bpmn:sequenceFlow id="Flow_15jpmz7" sourceRef="Activity_doctor2" targetRef="Event_1w36ikw" />
+    <bpmn:sequenceFlow id="Flow_1ipugf9" sourceRef="StartEvent_1" targetRef="Activity_frontoffice" />
+    <bpmn:sequenceFlow id="Flow_1jc9prq" sourceRef="Activity_lab" targetRef="Activity_doctor2" />
+    <bpmn:userTask id="Activity_frontoffice" name="frontoffice">
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:assignmentDefinition assignee="frontoffice" candidateGroups="frontoffice" candidateUsers="" />
@@ -56,18 +58,20 @@
       <bpmn:incoming>Flow_1ipugf9</bpmn:incoming>
       <bpmn:outgoing>Flow_018o8hy</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Activity_1l2odrk" name="lab">
+    <bpmn:userTask id="Activity_lab" name="lab">
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:formDefinition externalReference="lab" />
         <zeebe:ioMapping>
           <zeebe:input source="=false" target="payment_done" />
+          <zeebe:input source="=user" target="user" />
         </zeebe:ioMapping>
+        <zeebe:assignmentDefinition assignee="${user}" candidateGroups="${labgroup}" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0igqmgs</bpmn:incoming>
       <bpmn:outgoing>Flow_1jc9prq</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Activity_11wjzoc" name="pharmacy">
+    <bpmn:userTask id="Activity_pharmacy" name="pharmacy">
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:formDefinition externalReference="pharmacy" />
@@ -76,24 +80,26 @@
           <zeebe:input source="=prescription" target="prescription" />
           <zeebe:input source="=dueDateTime" target="dueDateTime" />
         </zeebe:ioMapping>
+        <zeebe:assignmentDefinition candidateGroups="Nurses,Cardiology,Lab" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0phx2kk</bpmn:incoming>
+      <bpmn:outgoing>Flow_1877klw</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:startEvent id="StartEvent_1" name="start">
       <bpmn:outgoing>Flow_1ipugf9</bpmn:outgoing>
     </bpmn:startEvent>
+    <bpmn:endEvent id="Event_1f5276a">
+      <bpmn:incoming>Flow_1877klw</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1877klw" sourceRef="Activity_pharmacy" targetRef="Event_1f5276a" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_hims_op">
-      <bpmndi:BPMNShape id="Activity_1iaiw77_di" bpmnElement="Activity_0jtfxfy">
-        <dc:Bounds x="320" y="78" width="100" height="80" />
-        <bpmndi:BPMNLabel />
+      <bpmndi:BPMNShape id="Activity_0bn4wl3_di" bpmnElement="Activity_doctor1">
+        <dc:Bounds x="560" y="78" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
-        <dc:Bounds x="150" y="100" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="157" y="143" width="23" height="14" />
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Activity_1i2wx1q_di" bpmnElement="Activity_doctor2">
+        <dc:Bounds x="920" y="270" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1w36ikw_di" bpmnElement="Event_1w36ikw">
         <dc:Bounds x="942" y="72" width="36" height="36" />
@@ -101,25 +107,33 @@
           <dc:Bounds x="950" y="48" width="19" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0bn4wl3_di" bpmnElement="Activity_1ivtapq">
-        <dc:Bounds x="560" y="78" width="100" height="80" />
+      <bpmndi:BPMNShape id="Activity_1iaiw77_di" bpmnElement="Activity_frontoffice">
+        <dc:Bounds x="320" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1dgwbni_di" bpmnElement="Activity_11wjzoc">
-        <dc:Bounds x="560" y="270" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_11r652b_di" bpmnElement="Activity_1l2odrk">
+      <bpmndi:BPMNShape id="Activity_11r652b_di" bpmnElement="Activity_lab">
         <dc:Bounds x="710" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1i2wx1q_di" bpmnElement="Activity_1xh8jvw">
-        <dc:Bounds x="920" y="270" width="100" height="80" />
+      <bpmndi:BPMNShape id="Activity_1dgwbni_di" bpmnElement="Activity_pharmacy">
+        <dc:Bounds x="560" y="270" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="150" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="157" y="143" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1f5276a_di" bpmnElement="Event_1f5276a">
+        <dc:Bounds x="592" y="402" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_018o8hy_di" bpmnElement="Flow_018o8hy">
         <di:waypoint x="420" y="118" />
         <di:waypoint x="560" y="118" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1ipugf9_di" bpmnElement="Flow_1ipugf9">
-        <di:waypoint x="186" y="118" />
-        <di:waypoint x="320" y="118" />
+      <bpmndi:BPMNEdge id="Flow_0igqmgs_di" bpmnElement="Flow_0igqmgs">
+        <di:waypoint x="660" y="118" />
+        <di:waypoint x="760" y="118" />
+        <di:waypoint x="760" y="190" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0kirys8_di" bpmnElement="Flow_0kirys8">
         <di:waypoint x="660" y="90" />
@@ -129,10 +143,15 @@
         <di:waypoint x="610" y="158" />
         <di:waypoint x="610" y="270" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0igqmgs_di" bpmnElement="Flow_0igqmgs">
-        <di:waypoint x="660" y="118" />
-        <di:waypoint x="760" y="118" />
-        <di:waypoint x="760" y="190" />
+      <bpmndi:BPMNEdge id="Flow_15jpmz7_di" bpmnElement="Flow_15jpmz7">
+        <di:waypoint x="970" y="270" />
+        <di:waypoint x="970" y="189" />
+        <di:waypoint x="960" y="189" />
+        <di:waypoint x="960" y="108" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ipugf9_di" bpmnElement="Flow_1ipugf9">
+        <di:waypoint x="186" y="118" />
+        <di:waypoint x="320" y="118" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1jc9prq_di" bpmnElement="Flow_1jc9prq">
         <di:waypoint x="810" y="230" />
@@ -140,11 +159,9 @@
         <di:waypoint x="850" y="280" />
         <di:waypoint x="920" y="280" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_15jpmz7_di" bpmnElement="Flow_15jpmz7">
-        <di:waypoint x="970" y="270" />
-        <di:waypoint x="970" y="189" />
-        <di:waypoint x="960" y="189" />
-        <di:waypoint x="960" y="108" />
+      <bpmndi:BPMNEdge id="Flow_1877klw_di" bpmnElement="Flow_1877klw">
+        <di:waypoint x="610" y="350" />
+        <di:waypoint x="610" y="402" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

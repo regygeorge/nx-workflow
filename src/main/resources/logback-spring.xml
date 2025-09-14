@@ -25,6 +25,11 @@
         </encoder>
     </appender>
 
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
     <!-- Route only engine traces to FLOW_TRACE -->
     <logger name="com.miniflow.core.DbBackedEngine" level="DEBUG" additivity="false">
         <appender-ref ref="FLOW_TRACE"/>
@@ -32,6 +37,7 @@
 
     <!-- Root logger -->
     <root level="INFO">
+        <appender-ref ref="CONSOLE" />
         <appender-ref ref="APP"/>
     </root>
 </configuration>

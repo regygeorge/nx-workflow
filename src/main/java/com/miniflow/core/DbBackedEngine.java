@@ -26,9 +26,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.UUID;
 
+import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
+
 @Service
 public class DbBackedEngine {
-
+    @SafeVarargs static <T> T firstNonNull(T... v){ for (T x: v) if (x!=null) return x; return null; }
+    static String prop(Node n, String k) { return n.props == null ? null : n.props.get(k); }
     private final Map<String, ProcessDefinition> deployed = new ConcurrentHashMap<>();
     private final EnginePersistencePort db;
     private final WfInstanceRepo instanceRepo;
@@ -223,9 +226,35 @@ public class DbBackedEngine {
                         progressed = true;
                     }
                     case USER_TASK -> {
-                        db.createUserTask(iid, tv.tokenId(), node.id, node.name);
+
+                        String formKey = null;
+                        if (node.props != null) {
+                            formKey = node.props.getOrDefault("form.external", null);
+                            if (formKey == null) formKey = node.props.get("zeebe.form.externalReference");
+                        }
+
+                        // Assignment: read from props, allow expressions like ${doctorUser}
+                        //String assignee = resolveString(node.props.get("camunda.assignee"), vars);
+                        String assignee = firstNonNull(
+                                resolveString(prop(node, "zeebe.assignmentDefinition.assignee"), vars),
+                                resolveString(prop(node, "zeebe.assignee"), vars),                  // just in case you flatten differently
+                                resolveString(prop(node, "camunda.assignee"), vars),
+                                resolveString(prop(node, "assignee"), vars)
+                        );
+//  <zeebe:assignmentDefinition assignee="pharmacy" candidateGroups="Nurses,Cardiology,Lab" />
+                        List<String> candUsers  = splitCsv(resolveString(node.props.get("zeebe:assignmentDefinition.candidateUsers="),  vars));
+                        List<String> candGroups = splitCsv(resolveString(node.props.get("zeebe.assignmentDefinition.candidateGroups"), vars));
+
+                        // optional priority/due date
+                        Integer priority = tryInt(resolveString(node.props.get("camunda.priority"), vars));
+                        OffsetDateTime due = tryDate(resolveString(node.props.get("camunda.dueDate"), vars));
+
+                        db.createUserTask(iid, tv.tokenId(), node.id, node.name, formKey,
+                                assignee, candUsers, candGroups, priority, due);
+
                         db.consumeToken(tv.tokenId());
                     }
+
                     case EXCLUSIVE_GATEWAY -> {
                         SequenceFlow out = chooseOutgoing(vars, node);
                         db.moveToken(tv.tokenId(), out.to);
@@ -385,14 +414,69 @@ public class DbBackedEngine {
         return new InstanceView(e.id, e.processId, e.businessKey, completed, v, active);
     }
 
-  // DbBackedEngine.java
+
+    private static boolean truthy(Object v) {
+        if (v == null) return true;                // nothing to evaluate ⇒ allow
+        if (v instanceof Boolean) return (Boolean) v;
+        if (v instanceof CharSequence) {
+            String s = v.toString().trim().toLowerCase();
+            return s.isEmpty() || s.equals("true") || s.equals("yes") || s.equals("1");
+        }
+        if (v instanceof Number) return ((Number) v).doubleValue() != 0.0;
+        return true; // any non-null object ⇒ treat as true
+    }
+
+    private static Map<String,Object> safeVars(Map<String,Object> vars) {
+        return (vars == null) ? java.util.Collections.emptyMap() : vars;
+    }
+
+    private static boolean passesFailOpen(EngineModel.SequenceFlow f, Map<String,Object> vars) {
+        // treat "no real condition" as true
+        if (f.condition == null) return true;
+        // if you have a raw expression field, also treat blank as no condition:
+        // if (f.conditionExpr != null && f.conditionExpr.isBlank()) return true;
+
+        try {
+            Object res = f.condition.eval(safeVars(vars));
+            return truthy(res);
+        } catch (Exception e) {
+            // key point: if the engine can't evaluate (missing var, null pointer, etc.),
+            // we interpret it as "no condition" ⇒ allow
+            return true;
+        }
+    }
+
+    // DbBackedEngine.java
   private List<EngineModel.SequenceFlow> matchingOutgoings(Map<String,Object> vars, EngineModel.Node node) {
     List<EngineModel.SequenceFlow> outs = new ArrayList<>();
-    for (EngineModel.SequenceFlow f : node.outgoing) {
-      if (f.condition == null || f.condition.eval(vars)) outs.add(f);
-    }
+      for (EngineModel.SequenceFlow f : node.outgoing) {
+          if (passesFailOpen(f, vars)) {
+              outs.add(f);
+          }
+      }
+
+
+
     if (outs.isEmpty()) throw new IllegalStateException("No matching condition from " + node.id);
     return outs;
   }
+
+    private static List<String> splitCsv(String s) {
+        if (s == null || s.isBlank()) return List.of();
+        return Arrays.stream(s.split("[,]"))
+                .map(String::trim).filter(x -> !x.isEmpty()).toList();
+    }
+
+    // If you kept Expr (SpEL), let it evaluate ${...}; otherwise return literal
+    private static String resolveString(String raw, Map<String,Object> vars) {
+        if (raw == null) return null;
+        String s = raw.trim();
+        if (s.startsWith("${") && s.endsWith("}")) {
+            return Expr.evalString(raw, vars);   // your SpEL helper, returns String
+        }
+        return s;
+    }
+    private static Integer tryInt(String s){ try { return s==null?null:Integer.valueOf(s);} catch(Exception e){ return null; } }
+    private static OffsetDateTime tryDate(String s){ try { return s==null?null:OffsetDateTime.parse(s);} catch(Exception e){ return null; } }
 
 }

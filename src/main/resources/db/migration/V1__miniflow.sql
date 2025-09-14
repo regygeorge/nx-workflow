@@ -47,13 +47,22 @@ CREATE TABLE wf_task (
 );
 CREATE INDEX wf_task_instance_state_idx ON wf_task(instance_id, state);
 
-CREATE TABLE wf_variable (
+-- Postgres
+CREATE TABLE IF NOT EXISTS wf_variable (
   instance_id  uuid NOT NULL REFERENCES wf_instance(id) ON DELETE CASCADE,
-  key          text NOT NULL,
-  value        jsonb NOT NULL,
-  PRIMARY KEY (instance_id, key)
+  "key"        text NOT NULL,
+  value_text   text NOT NULL,                                -- store JSON as text
+  value_jsonb  jsonb GENERATED ALWAYS AS (value_text::jsonb) STORED,
+  updated_at   timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (instance_id, "key")
 );
-CREATE INDEX wf_variable_gin ON wf_variable USING gin (value);
+
+-- Optional: JSONB index for fast JSON queries
+CREATE INDEX IF NOT EXISTS idx_wf_variable_json ON wf_variable USING gin (value_jsonb);
+
+-- Optional: instance filter index
+CREATE INDEX IF NOT EXISTS idx_wf_variable_instance ON wf_variable (instance_id);
+
 
 CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
 BEGIN NEW.updated_at = now(); RETURN NEW; END; $$ LANGUAGE plpgsql;

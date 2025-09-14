@@ -15,90 +15,154 @@ import java.io.InputStream;
 import java.util.*;
 
 public class SimpleBpmnParser {
+  private static final String ZEEBE_NS = "http://camunda.org/schema/zeebe/1.0";
+
   public static ProcessDefinition parse(InputStream in){
     try {
-      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      var dbf = DocumentBuilderFactory.newInstance();
       dbf.setNamespaceAware(true);
-      // Fix security vulnerability - disable DOCTYPE declarations
       dbf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
       dbf.setFeature("http://xml.org/sax/features/external-general-entities", false);
       dbf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+
       Document doc = dbf.newDocumentBuilder().parse(in);
       Element root = doc.getDocumentElement();
-      Element process = first(root, "process"); if (process==null) throw new IllegalArgumentException("No <process>");
+      Element process = first(root, "process");
+      if (process==null) throw new IllegalArgumentException("No <process>");
 
-      String pid = process.getAttribute("id"); String pname = process.getAttribute("name");
+      String pid = process.getAttribute("id");
+      String pname = process.getAttribute("name");
       EngineModel.Builder b = new EngineModel.Builder(pid, pname);
 
       Map<String, Element> elById = new HashMap<>();
-      NodeList kids = process.getChildNodes();
+
       // Pass 1: nodes
+      NodeList kids = process.getChildNodes();
       for (int i=0;i<kids.getLength();i++){
-        Node n = kids.item(i); if (n.getNodeType()!=Node.ELEMENT_NODE) continue; Element e=(Element)n; elById.put(e.getAttribute("id"), e);
-        String ln = e.getLocalName(); if (ln==null) continue; String id = e.getAttribute("id"); String name = e.getAttribute("name");
+        org.w3c.dom.Node n = kids.item(i);
+        if (n.getNodeType()!=org.w3c.dom.Node.ELEMENT_NODE) continue;
+        Element e=(Element)n;
+
+        String ln = e.getLocalName(); if (ln==null) continue;
+        String id = e.getAttribute("id");
+        String name = e.getAttribute("name");
+        if (id!=null && !id.isBlank()) elById.put(id, e);
+
         switch (ln){
-          case "startEvent" -> b.start(id);
-          case "endEvent"   -> b.end(id);
-          case "userTask"   -> b.userTask(id, name);
-          case "exclusiveGateway" -> b.exclusiveGateway(id, name);
-          case "parallelGateway"  -> b.parallelGateway(id, name);
+          case "startEvent"        -> b.start(id);
+          case "endEvent"          -> b.end(id);
+          case "userTask"          -> b.userTask(id, name);
+          case "exclusiveGateway"  -> b.exclusiveGateway(id, name);
+          case "parallelGateway"   -> b.parallelGateway(id, name);
           case "serviceTask", "task" -> {
-            Map<String,String> props = readProps(e); // custom/miniflow props
-            b.serviceTask(id, name, id, props);
+            Map<String,String> props = readProps(e);
+            b.serviceTask(id, name, id, props); // taskType defaults to id
           }
           default -> {}
         }
       }
-      // Pass 2: flows
+
+      // Pass 2: flows with conditions (use SpEL via Expr)
       for (int i=0;i<kids.getLength();i++){
-        Node n = kids.item(i); if (n.getNodeType()!=Node.ELEMENT_NODE) continue; Element e=(Element)n;
+        org.w3c.dom.Node n = kids.item(i);
+        if (n.getNodeType()!=org.w3c.dom.Node.ELEMENT_NODE) continue;
+        Element e=(Element)n;
         if (!"sequenceFlow".equals(e.getLocalName())) continue;
-        String from = e.getAttribute("sourceRef"); String to = e.getAttribute("targetRef");
-        EngineModel.Condition cond = EngineModel.Conditions.alwaysTrue();
-        Element expr = first(e, "conditionExpression");
-        if (expr!=null) { EngineModel.Condition c = parseSimpleExpr(expr.getTextContent()); if (c!=null) cond=c; }
-        b.flow(from,to,cond);
+
+        String from = e.getAttribute("sourceRef");
+        String to   = e.getAttribute("targetRef");
+
+        Element exprEl = first(e, "conditionExpression");
+        String exprText = (exprEl==null? null : exprEl.getTextContent());
+
+        EngineModel.Condition cond = (vars) -> com.miniflow.core.Expr.evalLogical(exprText, vars);
+        EngineModel.Condition condTrue =  v -> true;
+        if(exprText==null){
+          b.flow(from, to, condTrue);
+        }else{
+          b.flow(from, to, cond);
+        }
+
       }
-      return b.build();
-    } catch (Exception ex){ throw new RuntimeException("Parse BPMN failed: "+ex.getMessage(), ex); }
+
+      // Build graph
+      ProcessDefinition def = b.build();
+
+      // Pass 3: attach props to ALL nodes (so user task form key etc. are available)
+      for (var entry : elById.entrySet()){
+        String id = entry.getKey();
+        Element e = entry.getValue();
+        Map<String,String> props = readProps(e);
+        if (!props.isEmpty()){
+          EngineModel.Node node = def.getNode(id);
+          if (node != null) node.props.putAll(props);
+        }
+      }
+
+      return def;
+    } catch (Exception ex){
+      throw new RuntimeException("Parse BPMN failed: "+ex.getMessage(), ex);
+    }
   }
 
-  // Handle both ${x=="A"} and #{x=="A"} expressions, or complex SpEL expressions
-  private static EngineModel.Condition parseSimpleExpr(String raw){
-    if (raw==null) return null;
-    String s=raw.trim();
-    
-    // For complex expressions, use SpEL directly
-    final String expr = s;
-    return vars -> {
-      Object result = com.miniflow.core.Expr.eval(expr, vars);
-      return result instanceof Boolean ? (Boolean) result : false;
-    };
+  // Allow ${...} or #{...}, anything SpEL; Expr.evalLogical handles nulls safely
+  private static EngineModel.Condition parseExpr(String raw){
+    return vars -> com.miniflow.core.Expr.evalLogical(raw, vars);
   }
 
-  // Read extensionElements and attributes as key-value props (miniflow.*)
+  // Namespace-aware props reader
   private static Map<String,String> readProps(Element task){
     Map<String,String> props = new HashMap<>();
+
+    // Task attributes, keep prefix as part of the key (prefix.local)
     NamedNodeMap attrs = task.getAttributes();
     for (int i=0;i<attrs.getLength();i++){
       Attr a = (Attr)attrs.item(i);
-      String ln = a.getLocalName(); String val=a.getValue();
-      if (ln==null) continue; // capture namespaced attrs as ln
-      if (ln.startsWith("miniflow:")) props.put(ln.substring("miniflow:".length()), val);
-      if (ln.equals("type")) props.put("type", val);
+      String local = a.getLocalName();
+      String prefix = a.getPrefix();
+      if (local==null) continue;
+      String key = (prefix!=null && !prefix.isBlank()) ? (prefix + "." + local) : local;
+      props.put(key, a.getValue());
+      if ("type".equals(local)) props.put("type", a.getValue());
     }
+
+    // extensionElements
     Element ext = first(task, "extensionElements");
     if (ext!=null){
       NodeList ch = ext.getChildNodes();
       for (int i=0;i<ch.getLength();i++){
-        Node n = ch.item(i); if (n.getNodeType()!=Node.ELEMENT_NODE) continue; Element e=(Element)n;
-        // record every attribute as key=value, using localName
+        org.w3c.dom.Node n = ch.item(i);
+        if (n.getNodeType()!=org.w3c.dom.Node.ELEMENT_NODE) continue;
+        Element e=(Element)n;
+        String elLocal  = e.getLocalName();
+        String elPrefix = e.getPrefix();
+        String elKey = (elPrefix!=null && !elPrefix.isBlank()) ? (elPrefix + "." + elLocal) : elLocal;
+
+        // record attributes as elKey.key (with namespace prefix if present)
         NamedNodeMap aa = e.getAttributes();
         for (int j=0;j<aa.getLength();j++){
-          Attr a=(Attr)aa.item(j); String ln=a.getLocalName(); if (ln==null) continue; props.put(ln, a.getValue());
+          Attr a=(Attr)aa.item(j);
+          String local = a.getLocalName();
+          String prefix = a.getPrefix();
+          if (local==null) continue;
+          String key = (prefix!=null && !prefix.isBlank()) ? (prefix + "." + local) : local;
+          props.put(elKey + "." + key, a.getValue());
         }
-        // if element text exists, store under its localName
-        String text = e.getTextContent(); if (text!=null && !text.isBlank()) props.put(e.getLocalName(), text.trim());
+
+        String text = e.getTextContent();
+        if (text!=null && !text.isBlank()){
+          props.put(elKey, text.trim());
+        }
+
+        // special-case: zeebe:formDefinition externalReference -> handy keys
+        if ("formDefinition".equals(elLocal) && "zeebe".equals(elPrefix)){
+          String extRef = e.getAttributeNS(ZEEBE_NS, "externalReference");
+          if (extRef==null || extRef.isBlank()) extRef = e.getAttribute("externalReference");
+          if (extRef!=null && !extRef.isBlank()){
+            props.put("zeebe.form.externalReference", extRef);
+            props.put("form.external", extRef); // alias used by your engine code
+          }
+        }
       }
     }
     return props;
@@ -107,7 +171,11 @@ public class SimpleBpmnParser {
   private static Element first(Element parent, String local){
     NodeList list = parent.getChildNodes();
     for (int i=0;i<list.getLength();i++){
-      Node n = list.item(i); if (n.getNodeType()!=Node.ELEMENT_NODE) continue; Element e=(Element)n; if (local.equals(e.getLocalName())) return e; }
+      org.w3c.dom.Node n = list.item(i);
+      if (n.getNodeType()!=org.w3c.dom.Node.ELEMENT_NODE) continue;
+      Element e=(Element)n;
+      if (local.equals(e.getLocalName())) return e;
+    }
     return null;
   }
 }

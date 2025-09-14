@@ -10,9 +10,14 @@ import java.util.UUID;
 @Entity
 @Table(name="wf_task")
 public class WfTask { @Id
-public UUID id; public UUID instanceId;
-public UUID tokenId; public String nodeId;
-public String name; public String state;
+public UUID id;
+    public UUID instanceId;
+public UUID tokenId;
+public String nodeId;
+public String name;
+public String state;
 public OffsetDateTime createdAt;
 public OffsetDateTime completedAt;
-public OffsetDateTime dueDateTime; }
+public OffsetDateTime dueDateTime;
+    public String formKey;
+    public String assignee; }
